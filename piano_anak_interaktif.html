@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Musik Princess 👑🎹</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts: Fredoka & Quicksand -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Quicksand:wght@500;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        fredoka: ['Fredoka', 'sans-serif'],
+                        quicksand: ['Quicksand', 'sans-serif'],
+                    },
+                    colors: {
+                        'princess-pink': '#FF85A1',
+                        'princess-purple': '#9B51E0',
+                        'princess-yellow': '#FFD166',
+                        'princess-teal': '#4ECDC4',
+                    },
+                    keyframes: {
+                        bounceSmall: {
+                            '0%, 100%': { transform: 'translateY(-6%)' },
+                            '50%': { transform: 'translateY(0)' },
+                        },
+                        popScale: {
+                            '0%': { transform: 'scale(0.8)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' },
+                        }
+                    },
+                    animation: {
+                        'bounce-small': 'bounceSmall 2s infinite',
+                        'pop-scale': 'popScale 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #FFDEE9 0%, #B5FFFC 100%);
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            min-height: 100vh;
+        }
+
+        /* Styling Tuts Piano */
+        .piano-key-white {
+            background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 5px 0 #cbd5e1, 0 8px 15px rgba(0,0,0,0.1);
+            transition: all 0.08s ease;
+        }
+        .piano-key-white:active, .piano-key-white.active {
+            background: linear-gradient(to bottom, #f1f5f9 0%, #ffffff 100%);
+            transform: translateY(5px);
+            box-shadow: 0 0 0 #cbd5e1, 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        .piano-key-black {
+            background: linear-gradient(to bottom, #334155 0%, #0f172a 100%);
+            box-shadow: 0 4px 0 #020617, 0 5px 10px rgba(0,0,0,0.3);
+            transition: all 0.08s ease;
+        }
+        .piano-key-black:active, .piano-key-black.active {
+            background: linear-gradient(to bottom, #0f172a 0%, #334155 100%);
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #020617, 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Key Highlight Feedback */
+        .key-correct { background: #4ECDC4 !important; color: white !important; transform: translateY(4px); }
+        .key-wrong { background: #FF6B6B !important; color: white !important; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { height: 6px; width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.4); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #FF85A1; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between p-2 md:p-5 text-slate-800">
+
+    <!-- HEADER & PROFILE BAR -->
+    <header class="w-full max-w-5xl bg-white/90 backdrop-blur-md rounded-3xl p-3 md:p-4 shadow-xl mb-3 border-4 border-white flex flex-wrap justify-between items-center gap-3">
+        
+        <!-- Student Profile (Princess) -->
+        <div class="flex items-center space-x-3 bg-pink-50 border-2 border-pink-200 px-3 py-1.5 rounded-2xl shadow-sm">
+            <div class="w-11 h-11 bg-gradient-to-tr from-pink-400 to-purple-500 rounded-2xl flex items-center justify-center text-2xl shadow-md border-2 border-white animate-bounce-small">
+                👑
+            </div>
+            <div>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs text-pink-500 font-bold tracking-wide uppercase">Murid Istimewa</span>
+                    <span class="bg-purple-100 text-purple-700 text-[10px] px-2 py-0.5 rounded-full font-bold">Kelas 2 SD</span>
+                </div>
+                <h1 class="text-xl md:text-2xl font-black text-pink-600 leading-tight">Princess</h1>
+            </div>
+        </div>
+
+        <!-- Total Points Badge (Local Storage Persistent) -->
+        <div class="flex items-center bg-amber-100 border-2 border-amber-300 px-4 py-2 rounded-2xl shadow-inner space-x-2">
+            <div class="text-2xl animate-spin-slow">⭐</div>
+            <div>
+                <span class="text-[10px] font-bold text-amber-800 uppercase block leading-none">Bintang Princess</span>
+                <span id="totalPointsDisplay" class="text-2xl font-black text-amber-600 font-mono leading-none">0</span>
+            </div>
+        </div>
+
+        <!-- Kids Pomodoro Timer (15:5) -->
+        <div class="flex items-center bg-indigo-50 px-3 py-1.5 rounded-2xl border-2 border-indigo-200 shadow-sm space-x-2">
+            <div class="text-xl" id="timerIcon">⏳</div>
+            <div>
+                <div class="flex items-center gap-1">
+                    <span id="timerModeText" class="text-[10px] font-bold text-indigo-700 uppercase">Latihan</span>
+                    <span id="timerBadge" class="bg-indigo-400 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">15m</span>
+                </div>
+                <div id="timerDisplay" class="text-lg font-black text-indigo-900 font-mono">15:00</div>
+            </div>
+            <div class="flex gap-1 ml-1">
+                <button id="btnStartTimer" onclick="toggleTimer()" class="w-7 h-7 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center justify-center shadow transition-transform active:scale-95">
+                    <i class="fa-solid fa-play text-xs"></i>
+                </button>
+                <button onclick="resetTimer()" class="w-7 h-7 bg-slate-200 hover:bg-slate-300 text-slate-600 rounded-lg flex items-center justify-center transition-transform active:scale-95">
+                    <i class="fa-solid fa-rotate-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="w-full max-w-5xl flex gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar">
+        <button onclick="switchTab('note-quiz')" id="tab-note-quiz" class="tab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-2xl font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all shadow-md bg-white text-pink-600 border-2 border-pink-400">
+            <i class="fa-solid fa-bullseye text-pink-500"></i> 1. Tebak Not Tuts
+        </button>
+        <button onclick="switchTab('chord-quiz')" id="tab-chord-quiz" class="tab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-2xl font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all shadow-sm bg-white/70 text-slate-600 hover:bg-white">
+            <i class="fa-solid fa-headphones text-purple-500"></i> 2. Tebak Suara Kunci
+        </button>
+        <button onclick="switchTab('twinkle')" id="tab-twinkle" class="tab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-2xl font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all shadow-sm bg-white/70 text-slate-600 hover:bg-white">
+            <i class="fa-solid fa-star text-yellow-500"></i> 3. Misi Twinkle
+        </button>
+        <button onclick="switchTab('chord-lab')" id="tab-chord-lab" class="tab-btn flex-1 min-w-[140px] py-2.5 px-3 rounded-2xl font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all shadow-sm bg-white/70 text-slate-600 hover:bg-white">
+            <i class="fa-solid fa-compact-disc text-teal-500"></i> 4. Lab C-F-G
+        </button>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="w-full max-w-5xl bg-white/90 backdrop-blur-md rounded-3xl p-4 md:p-6 shadow-2xl border-4 border-white flex-1 flex flex-col justify-between min-h-[440px]">
+
+        <!-- GAME 1: TEBAK NIAT TUTS / CARI NOT (REQUEST UTAMA) -->
+        <div id="content-note-quiz" class="tab-content flex-1 flex flex-col justify-between">
+            <div class="text-center mb-2">
+                <span class="bg-pink-100 text-pink-600 text-xs font-bold px-3 py-1 rounded-full border border-pink-300">
+                    🎯 Game 1: Cari & Tekan Tuts Yang Benar!
+                </span>
+                <p class="text-xs text-slate-500 mt-1">Dapatkan +10 Bintang setiap kali Princess berhasil menebak!</p>
+            </div>
+
+            <!-- Question Card Display -->
+            <div class="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 p-6 rounded-3xl text-white text-center shadow-lg my-2 border-4 border-pink-200 animate-pop-scale flex flex-col items-center justify-center min-h-[160px]">
+                <div class="text-xs md:text-sm font-bold uppercase tracking-widest text-pink-200 mb-1">Misi Princess:</div>
+                <div id="targetQuestionText" class="text-3xl md:text-5xl font-black drop-shadow-md my-1">
+                    Tekan Not: <span class="text-yellow-300">C (Do)</span>
+                </div>
+                <div id="targetSolfegeSub" class="text-sm md:text-base font-bold bg-white/20 px-4 py-1 rounded-full mt-2">
+                    💡 Petunjuk: Tuts warna merah / huruf A di keyboard
+                </div>
+            </div>
+
+            <!-- Instant Feedback Message -->
+            <div id="noteQuizFeedback" class="text-center font-black text-lg h-8 flex items-center justify-center gap-2">
+                <span class="text-slate-400 font-normal text-sm">Ayo Princess, pencet tuts piano di bawah! 👇</span>
+            </div>
+        </div>
+
+        <!-- GAME 2: TEBAK BUNYI KUNCI (AUDIO CHORD) -->
+        <div id="content-chord-quiz" class="tab-content hidden flex-1 flex flex-col justify-between text-center">
+            <div class="mb-2">
+                <span class="bg-purple-100 text-purple-600 text-xs font-bold px-3 py-1 rounded-full border border-purple-300">
+                    🎧 Game 2: Tebak Suara Kunci
+                </span>
+                <p class="text-xs text-slate-500 mt-1">Dengarkan suaranya lalu tebak kuncinya!</p>
+            </div>
+
+            <div class="bg-indigo-50 border-2 border-indigo-100 rounded-3xl p-6 my-2 flex flex-col items-center justify-center min-h-[150px]">
+                <button id="btnPlaySoundQuestion" onclick="playGameSoundQuestion()" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold px-6 py-3 rounded-2xl text-base shadow-lg animate-pulse hover:animate-none active:scale-95 transition-all flex items-center gap-2">
+                    🔊 Putar Suara Rahasia!
+                </button>
+                <div id="chordQuizFeedback" class="mt-3 font-bold text-sm h-6"></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3 my-2">
+                <button onclick="submitChordGuess('C')" class="bg-red-400 hover:bg-red-500 text-white font-black py-3 rounded-2xl text-lg shadow-md active:scale-95 transition-all">
+                    Kunci C
+                </button>
+                <button onclick="submitChordGuess('F')" class="bg-teal-400 hover:bg-teal-500 text-white font-black py-3 rounded-2xl text-lg shadow-md active:scale-95 transition-all">
+                    Kunci F
+                </button>
+                <button onclick="submitChordGuess('G')" class="bg-green-400 hover:bg-green-500 text-white font-black py-3 rounded-2xl text-lg shadow-md active:scale-95 transition-all">
+                    Kunci G
+                </button>
+            </div>
+        </div>
+
+        <!-- GAME 3: MISI TWINKLE TWINKLE -->
+        <div id="content-twinkle" class="tab-content hidden flex-1 flex flex-col justify-between">
+            <div class="flex justify-between items-center mb-2">
+                <div>
+                    <span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full border border-yellow-300">
+                        ⭐ Game 3: Detektif Melodi
+                    </span>
+                    <p class="text-xs text-slate-500 mt-1">Tekan tuts sesuai bintang yang berkedip!</p>
+                </div>
+                <button onclick="resetTwinkleGame()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-3 py-1 rounded-xl border border-amber-300">
+                    🔄 Ulangi
+                </button>
+            </div>
+
+            <div class="bg-gradient-to-r from-slate-900 to-indigo-950 p-4 rounded-2xl shadow-inner my-2 overflow-x-auto">
+                <div id="twinkleNotesContainer" class="flex gap-2 min-w-max justify-center items-center py-2">
+                    <!-- Dynamic Notes -->
+                </div>
+            </div>
+
+            <div id="twinkleStatus" class="text-center font-bold text-amber-600 my-1 text-sm md:text-base">
+                Ayo pencet tombol <span id="targetNoteBadge" class="bg-amber-400 text-white px-3 py-1 rounded-full animate-bounce inline-block">C</span> !
+            </div>
+        </div>
+
+        <!-- GAME 4: LAB KUNCI C, F, G (HARMONI & ARPEGGIO) -->
+        <div id="content-chord-lab" class="tab-content hidden flex-1 flex flex-col justify-between">
+            <div class="text-center mb-2">
+                <span class="bg-teal-100 text-teal-700 text-xs font-bold px-3 py-1 rounded-full border border-teal-300">
+                    🎹 Game 4: Lab Kunci & Arpeggio
+                </span>
+                <p class="text-xs text-slate-500 mt-1">Dengarkan bedanya Harmoni (bersamaan) vs Arpeggio (satu per satu)!</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 my-2">
+                <!-- Chord C -->
+                <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-3 text-center">
+                    <div class="text-2xl font-black text-red-500 mb-1">C Major</div>
+                    <div class="text-xs font-bold text-red-700 bg-red-100 py-0.5 rounded-lg mb-2">C - E - G (Do-Mi-Sol)</div>
+                    <div class="flex gap-2">
+                        <button onclick="playChordAction('C', 'harmony')" class="flex-1 bg-red-400 hover:bg-red-500 text-white font-bold py-2 rounded-xl text-xs shadow active:scale-95">
+                            🎶 Harmoni
+                        </button>
+                        <button onclick="playChordAction('C', 'arpeggio')" class="flex-1 bg-amber-400 hover:bg-amber-500 text-white font-bold py-2 rounded-xl text-xs shadow active:scale-95">
+                            ✨ Arpeggio
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chord F -->
+                <div class="bg-teal-50 border-2 border-teal-200 rounded-2xl p-3 text-center">
+                    <div class="text-2xl font-black text-teal-600 mb-1">F Major</div>
+                    <div class="text-xs font-bold text-teal-700 bg-teal-100 py-0.5 rounded-lg mb-2">F - A - C2 (Fa-La-Do)</div>
+                    <div class="flex gap-2">
+                        <button onclick="playChordAction('F', 'harmony')" class="flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-xl text-xs shadow active:scale-95">
+                            🎶 Harmoni
+                        </button>
+                        <button onclick="playChordAction('F', 'arpeggio')" class="flex-1 bg-amber-400 hover:bg-amber-500 text-white font-bold py-2 rounded-xl text-xs shadow active:scale-95">
+                            ✨ Arpeggio
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chord G -->
+                <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-3 text-center">
+                    <div class="text-2xl font-black text-green-600 mb-1">G Major</div>
+                    <div class="text-xs font-bold text-green-700 bg-green-100 py-0.5 rounded-lg mb-2">G - B - D2 (Sol-Si-Re)</div>
+                    <div class="flex gap-2">
+                        <button onclick="playChordAction('G', 'harmony')" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-xl text-xs shadow active:scale-95">
+                            🎶 Harmoni
+                        </button>
+                        <button onclick="playChordAction('G', 'arpeggio')" class="flex-1 bg-amber-400 hover:bg-amber-500 text-white font-bold py-2 rounded-xl text-xs shadow active:scale-95">
+                            ✨ Arpeggio
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-purple-50 p-2.5 rounded-xl border border-purple-200 text-xs text-purple-800 text-center">
+                💡 <b>Catatan Guru:</b> Harmoni = Bunyi barengan. Arpeggio = Bunyi petikan bergantian!
+            </div>
+        </div>
+
+
+        <!-- VIRTUAL PIANO KEYBOARD (DITAMPILKAN DI SEMUA GAME) -->
+        <div class="mt-3 pt-3 border-t-2 border-slate-100">
+            <div class="relative flex justify-center items-start w-full max-w-3xl mx-auto h-44 md:h-52 px-1 select-none" id="pianoContainer">
+                <!-- White Keys -->
+                <div class="flex w-full h-full justify-center">
+                    <div data-note="C4" data-solfege="Do" data-key="a" onclick="handleKeyInteraction('C4')" class="piano-key-white flex-1 h-full rounded-b-2xl border border-slate-200 flex flex-col justify-end items-center pb-2 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-400">A</span>
+                        <span class="text-base md:text-lg font-black text-red-500">C</span>
+                        <span class="text-[10px] font-bold text-red-400">Do</span>
+                    </div>
+                    <div data-note="D4" data-solfege="Re" data-key="s" onclick="handleKeyInteraction('D4')" class="piano-key-white flex-1 h-full rounded-b-2xl border border-slate-200 flex flex-col justify-end items-center pb-2 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-400">S</span>
+                        <span class="text-base md:text-lg font-black text-orange-500">D</span>
+                        <span class="text-[10px] font-bold text-orange-400">Re</span>
+                    </div>
+                    <div data-note="E4" data-solfege="Mi" data-key="d" onclick="handleKeyInteraction('E4')" class="piano-key-white flex-1 h-full rounded-b-2xl border border-slate-200 flex flex-col justify-end items-center pb-2 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-400">D</span>
+                        <span class="text-base md:text-lg font-black text-amber-500">E</span>
+                        <span class="text-[10px] font-bold text-amber-400">Mi</span>
+                    </div>
+                    <div data-note="F4" data-solfege="Fa" data-key="f" onclick="handleKeyInteraction('F4')" class="piano-key-white flex-1 h-full rounded-b-2xl border border-slate-200 flex flex-col justify-end items-center pb-2 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-400">F</span>
+                        <span class="text-base md:text-lg font-black text-teal-500">F</span>
+                        <span class="text-[10px] font-bold text-teal-400">Fa</span>
+                    </div>
+                    <div data-note="G4" data-solfege="Sol" data-key="g" onclick="handleKeyInteraction('G4')" class="piano-key-white flex-1 h-full rounded-b-2xl border border-slate-200 flex flex-col justify-end items-center pb-2 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-400">G</span>
+                        <span class="text-base md:text-lg font-black text-green-500">G</span>
+                        <span class="text-[10px] font-bold text-green-400">Sol</span>
+                    </div>
+                    <div data-note="A4" data-solfege="La" data-key="h" onclick="handleKeyInteraction('A4')" class="piano-key-white flex-1 h-full rounded-b-2xl border border-slate-200 flex flex-col justify-end items-center pb-2 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-400">H</span>
+                        <span class="text-base md:text-lg font-black text-blue-500">A</span>
+                        <span class="text-[10px] font-bold text-blue-400">La</span>
+                    </div>
+                    <div data-note="B4" data-solfege="Si" data-key="j" onclick="handleKeyInteraction('B4')" class="piano-key-white flex-1 h-full rounded-b-2xl border border-slate-200 flex flex-col justify-end items-center pb-2 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-400">J</span>
+                        <span class="text-base md:text-lg font-black text-purple-500">B</span>
+                        <span class="text-[10px] font-bold text-purple-400">Si</span>
+                    </div>
+                    <div data-note="C5" data-solfege="Do Tinggi" data-key="k" onclick="handleKeyInteraction('C5')" class="piano-key-white flex-1 h-full rounded-b-2xl border border-slate-200 flex flex-col justify-end items-center pb-2 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-400">K</span>
+                        <span class="text-base md:text-lg font-black text-pink-500">C2</span>
+                        <span class="text-[10px] font-bold text-pink-400">Do'</span>
+                    </div>
+                    <div data-note="D5" data-solfege="Re Tinggi" data-key="l" onclick="handleKeyInteraction('D5')" class="piano-key-white flex-1 h-full rounded-b-2xl border border-slate-200 flex flex-col justify-end items-center pb-2 cursor-pointer">
+                        <span class="text-[10px] font-bold text-slate-400">L</span>
+                        <span class="text-base md:text-lg font-black text-rose-500">D2</span>
+                        <span class="text-[10px] font-bold text-rose-400">Re'</span>
+                    </div>
+                </div>
+
+                <!-- Black Keys -->
+                <div class="absolute top-0 left-0 right-0 flex w-full h-3/5 px-1 pointer-events-none justify-center">
+                    <div class="flex-1 relative pointer-events-auto">
+                        <div data-note="C#4" onclick="handleKeyInteraction('C#4')" class="piano-key-black absolute right-0 translate-x-1/2 w-6 md:w-8 h-full rounded-b-lg z-10 cursor-pointer"></div>
+                    </div>
+                    <div class="flex-1 relative pointer-events-auto">
+                        <div data-note="D#4" onclick="handleKeyInteraction('D#4')" class="piano-key-black absolute right-0 translate-x-1/2 w-6 md:w-8 h-full rounded-b-lg z-10 cursor-pointer"></div>
+                    </div>
+                    <div class="flex-1 relative"></div>
+                    <div class="flex-1 relative pointer-events-auto">
+                        <div data-note="F#4" onclick="handleKeyInteraction('F#4')" class="piano-key-black absolute right-0 translate-x-1/2 w-6 md:w-8 h-full rounded-b-lg z-10 cursor-pointer"></div>
+                    </div>
+                    <div class="flex-1 relative pointer-events-auto">
+                        <div data-note="G#4" onclick="handleKeyInteraction('G#4')" class="piano-key-black absolute right-0 translate-x-1/2 w-6 md:w-8 h-full rounded-b-lg z-10 cursor-pointer"></div>
+                    </div>
+                    <div class="flex-1 relative pointer-events-auto">
+                        <div data-note="A#4" onclick="handleKeyInteraction('A#4')" class="piano-key-black absolute right-0 translate-x-1/2 w-6 md:w-8 h-full rounded-b-lg z-10 cursor-pointer"></div>
+                    </div>
+                    <div class="flex-1 relative"></div>
+                    <div class="flex-1 relative pointer-events-auto">
+                        <div data-note="C#5" onclick="handleKeyInteraction('C#5')" class="piano-key-black absolute right-0 translate-x-1/2 w-6 md:w-8 h-full rounded-b-lg z-10 cursor-pointer"></div>
+                    </div>
+                    <div class="flex-1 relative"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="w-full max-w-5xl text-center py-2 text-xs font-bold text-slate-500">
+        Dibuat khusus untuk Pembelajaran Musik Princess 👑🎹
+    </footer>
+
+    <!-- REST MODAL (POMODORO) -->
+    <div id="restModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full text-center shadow-2xl border-4 border-yellow-300 animate-bounce-small">
+            <div class="text-6xl mb-3">👑 🍦</div>
+            <h3 class="text-2xl font-black text-purple-600 mb-2">Hebat Sekali, Princess!</h3>
+            <p class="text-sm text-slate-600 mb-6">Waktunya istirahat 5 menit ya. Boleh minum air putih, stretching, atau santai sebentar!</p>
+            <button onclick="startBreakPeriod()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-2xl shadow-lg w-full text-base">
+                Mulai Istirahat (5 Menit) ⏱️
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* --- SYSTEM FREKUENSI AUDIO --- */
+        const NOTE_FREQUENCIES = {
+            'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13,
+            'E4': 329.63, 'F4': 349.23, 'F#4': 369.99, 'G4': 392.00,
+            'G#4': 415.30, 'A4': 440.00, 'A#4': 466.16, 'B4': 493.88,
+            'C5': 523.25, 'C#5': 554.37, 'D5': 587.33
+        };
+
+        const KEY_MAP = {
+            'a': 'C4', 's': 'D4', 'd': 'E4', 'f': 'F4',
+            'g': 'G4', 'h': 'A4', 'j': 'B4', 'k': 'C5', 'l': 'D5'
+        };
+
+        /* --- STATE & LOCAL STORAGE (POIN PRINCESS) --- */
+        let princessPoints = 0;
+
+        function loadPoints() {
+            const saved = localStorage.getItem('princess_piano_points');
+            if (saved) {
+                princessPoints = parseInt(saved, 10);
+            } else {
+                princessPoints = 0;
+            }
+            updatePointsDisplay();
+        }
+
+        function addPoints(pts) {
+            princessPoints += pts;
+            localStorage.setItem('princess_piano_points', princessPoints);
+            updatePointsDisplay();
+        }
+
+        function updatePointsDisplay() {
+            document.getElementById('totalPointsDisplay').innerText = princessPoints;
+        }
+
+        /* --- AUDIO SYNTHESIZER --- */
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playNote(noteName, duration = 1.2) {
+            initAudio();
+            const freq = NOTE_FREQUENCIES[noteName];
+            if (!freq) return;
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const osc2 = audioCtx.createOscillator();
+            const gain2 = audioCtx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now);
+
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(freq * 2, now);
+
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(0.6, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+            gain2.gain.setValueAtTime(0, now);
+            gain2.gain.linearRampToValueAtTime(0.15, now + 0.02);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + (duration * 0.5));
+
+            osc.connect(gain);
+            osc2.connect(gain2);
+            gain.connect(audioCtx.destination);
+            gain2.connect(audioCtx.destination);
+
+            osc.start(now);
+            osc2.start(now);
+            osc.stop(now + duration);
+            osc2.stop(now + duration);
+
+            animateKey(noteName);
+        }
+
+        function playSuccessSound() {
+            initAudio();
+            const now = audioCtx.currentTime;
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, index) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + index * 0.08);
+                gain.gain.setValueAtTime(0, now + index * 0.08);
+                gain.gain.linearRampToValueAtTime(0.3, now + index * 0.08 + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.08 + 0.4);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + index * 0.08);
+                osc.stop(now + index * 0.08 + 0.4);
+            });
+        }
+
+        function playWrongSound() {
+            initAudio();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + 0.3);
+        }
+
+        function animateKey(noteName) {
+            const el = document.querySelector(`[data-note="${noteName}"]`);
+            if (el) {
+                el.classList.add('active');
+                setTimeout(() => el.classList.remove('active'), 150);
+            }
+        }
+
+        /* --- MAIN INTERACTION ROUTER --- */
+        function handleKeyInteraction(notePlayed) {
+            playNote(notePlayed);
+
+            if (activeTab === 'note-quiz') {
+                checkNoteQuizAnswer(notePlayed);
+            } else if (activeTab === 'twinkle') {
+                checkTwinkleNote(notePlayed);
+            }
+        }
+
+        /* --- GAME 1: TEBAK NIAT TUTS (NOT QUIZ LOGIC) --- */
+        const QUIZ_NOTES = [
+            { note: 'C4', name: 'C', solfege: 'Do', hint: 'Tuts paling kiri (Tombol A)' },
+            { note: 'D4', name: 'D', solfege: 'Re', hint: 'Sebelah kanan C (Tombol S)' },
+            { note: 'E4', name: 'E', solfege: 'Mi', hint: 'Sebelah D (Tombol D)' },
+            { note: 'F4', name: 'F', solfege: 'Fa', hint: 'Di sebelah E (Tombol F)' },
+            { note: 'G4', name: 'G', solfege: 'Sol', hint: 'Di tengah piano (Tombol G)' },
+            { note: 'A4', name: 'A', solfege: 'La', hint: 'Di sebelah G (Tombol H)' },
+            { note: 'B4', name: 'B', solfege: 'Si', hint: 'Sebelah A (Tombol J)' },
+            { note: 'C5', name: 'C2', solfege: 'Do Tinggi', hint: 'C tinggi (Tombol K)' }
+        ];
+
+        let currentQuizTarget = null;
+
+        function generateNewNoteQuestion() {
+            const rand = QUIZ_NOTES[Math.floor(Math.random() * QUIZ_NOTES.length)];
+            currentQuizTarget = rand;
+            
+            document.getElementById('targetQuestionText').innerHTML = 
+                `Tekan Not: <span class="text-yellow-300 font-black">${rand.name} (${rand.solfege})</span>`;
+            document.getElementById('targetSolfegeSub').innerText = 
+                `💡 Petunjuk: ${rand.hint}`;
+            document.getElementById('noteQuizFeedback').innerHTML = 
+                `<span class="text-slate-400 font-normal text-sm">Ayo Princess, pencet tuts ${rand.name} di piano! 👇</span>`;
+        }
+
+        function checkNoteQuizAnswer(notePlayed) {
+            if (!currentQuizTarget) return;
+
+            const feedbackEl = document.getElementById('noteQuizFeedback');
+            const keyEl = document.querySelector(`[data-note="${notePlayed}"]`);
+
+            if (notePlayed === currentQuizTarget.note) {
+                addPoints(10);
+                playSuccessSound();
+                confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
+
+                if (keyEl) keyEl.classList.add('key-correct');
+                setTimeout(() => keyEl && keyEl.classList.remove('key-correct'), 400);
+
+                feedbackEl.innerHTML = `<span class="text-emerald-600 font-bold animate-bounce">🎉 PINTAR BANGET PRINCESS! Benar! (+10 ⭐)</span>`;
+                setTimeout(() => {
+                    generateNewNoteQuestion();
+                }, 1200);
+            } else {
+                playWrongSound();
+                if (keyEl) keyEl.classList.add('key-wrong');
+                setTimeout(() => keyEl && keyEl.classList.remove('key-wrong'), 400);
+
+                feedbackEl.innerHTML = `<span class="text-rose-500 font-bold">❌ Hampir tepat! Coba tuts lain ya Princess!</span>`;
+            }
+        }
+
+        /* --- GAME 2: TEBAK BUNYI KUNCI --- */
+        let currentSecretChord = '';
+
+        function playGameSoundQuestion() {
+            const keys = ['C', 'F', 'G'];
+            currentSecretChord = keys[Math.floor(Math.random() * keys.length)];
+            playChordAction(currentSecretChord, 'harmony');
+            document.getElementById('chordQuizFeedback').innerHTML = `<span class="text-indigo-600">Dengarkan baik-baik... Kunci apa ya itu?</span>`;
+        }
+
+        function submitChordGuess(guessedChord) {
+            const feedbackEl = document.getElementById('chordQuizFeedback');
+            if (!currentSecretChord) {
+                feedbackEl.innerHTML = `<span class="text-amber-600">Klik "Putar Suara Rahasia" dulu ya Princess!</span>`;
+                return;
+            }
+
+            if (guessedChord === currentSecretChord) {
+                addPoints(10);
+                playSuccessSound();
+                confetti({ particleCount: 50, spread: 50, origin: { y: 0.7 } });
+                feedbackEl.innerHTML = `<span class="text-emerald-600 font-bold">✨ HEBAT! Jawaban Benar! Ini Kunci ${currentSecretChord}! (+10 ⭐)</span>`;
+                currentSecretChord = '';
+            } else {
+                playWrongSound();
+                feedbackEl.innerHTML = `<span class="text-rose-500 font-bold">❌ Coba putar lagi dan dengarkan baik-baik ya!</span>`;
+            }
+        }
+
+        /* --- GAME 3: TWINKLE TWINKLE --- */
+        const TWINKLE_SONG = [
+            { note: 'C4', label: 'C' }, { note: 'C4', label: 'C' },
+            { note: 'G4', label: 'G' }, { note: 'G4', label: 'G' },
+            { note: 'A4', label: 'A' }, { note: 'A4', label: 'A' },
+            { note: 'G4', label: 'G' },
+            { note: 'F4', label: 'F' }, { note: 'F4', label: 'F' },
+            { note: 'E4', label: 'E' }, { note: 'E4', label: 'E' },
+            { note: 'D4', label: 'D' }, { note: 'D4', label: 'D' },
+            { note: 'C4', label: 'C' }
+        ];
+
+        let twinkleIndex = 0;
+
+        function renderTwinkleNotes() {
+            const container = document.getElementById('twinkleNotesContainer');
+            container.innerHTML = '';
+
+            TWINKLE_SONG.forEach((item, idx) => {
+                const noteDiv = document.createElement('div');
+                let stateClass = "bg-slate-800 text-slate-400 border-slate-700";
+                if (idx < twinkleIndex) {
+                    stateClass = "bg-emerald-500 text-white border-emerald-300 scale-95 opacity-80";
+                } else if (idx === twinkleIndex) {
+                    stateClass = "bg-amber-400 text-slate-900 border-yellow-200 scale-110 shadow-lg animate-pulse font-black";
+                }
+
+                noteDiv.className = `w-10 h-14 rounded-2xl border-2 flex flex-col items-center justify-center font-bold transition-all ${stateClass}`;
+                noteDiv.innerHTML = `
+                    <span class="text-[10px]">${idx < twinkleIndex ? '✨' : '⭐'}</span>
+                    <span class="text-base">${item.label}</span>
+                `;
+                container.appendChild(noteDiv);
+            });
+
+            const currentTarget = TWINKLE_SONG[twinkleIndex];
+            if (currentTarget) {
+                document.getElementById('targetNoteBadge').innerText = currentTarget.label;
+            }
+        }
+
+        function checkTwinkleNote(notePlayed) {
+            if (twinkleIndex >= TWINKLE_SONG.length) return;
+
+            const expected = TWINKLE_SONG[twinkleIndex].note;
+            if (notePlayed === expected) {
+                twinkleIndex++;
+                renderTwinkleNotes();
+
+                if (twinkleIndex >= TWINKLE_SONG.length) {
+                    addPoints(30);
+                    playSuccessSound();
+                    confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+                    document.getElementById('twinkleStatus').innerHTML = `
+                        <span class="text-emerald-600 text-lg font-black">🎉 YAY!! Princess Berhasil Menyelesaikan Lagu! (+30 ⭐)</span>
+                    `;
+                }
+            }
+        }
+
+        function resetTwinkleGame() {
+            twinkleIndex = 0;
+            renderTwinkleNotes();
+            document.getElementById('twinkleStatus').innerHTML = `
+                Ayo pencet tombol <span id="targetNoteBadge" class="bg-amber-400 text-white px-3 py-1 rounded-full animate-bounce inline-block">C</span> !
+            `;
+        }
+
+        /* --- GAME 4: CHORD LAB --- */
+        const CHORDS = {
+            'C': ['C4', 'E4', 'G4'],
+            'F': ['F4', 'A4', 'C5'],
+            'G': ['G4', 'B4', 'D5']
+        };
+
+        function playChordAction(chordKey, mode) {
+            const notes = CHORDS[chordKey];
+            if (!notes) return;
+
+            if (mode === 'harmony') {
+                notes.forEach(n => playNote(n, 1.8));
+            } else if (mode === 'arpeggio') {
+                notes.forEach((n, idx) => {
+                    setTimeout(() => playNote(n, 1.2), idx * 240);
+                });
+                setTimeout(() => playNote(notes[1], 1.2), 3 * 240);
+                setTimeout(() => playNote(notes[0], 1.2), 4 * 240);
+            }
+        }
+
+        /* --- TAB NAVIGATION SYSTEM --- */
+        let activeTab = 'note-quiz';
+
+        function switchTab(tabName) {
+            activeTab = tabName;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-pink-600', 'border-2', 'border-pink-400', 'shadow-md');
+                btn.classList.add('bg-white/70', 'text-slate-600');
+            });
+
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.remove('bg-white/70', 'text-slate-600');
+            activeBtn.classList.add('bg-white', 'text-pink-600', 'border-2', 'border-pink-400', 'shadow-md');
+
+            if (tabName === 'note-quiz') {
+                generateNewNoteQuestion();
+            } else if (tabName === 'twinkle') {
+                renderTwinkleNotes();
+            } else if (tabName === 'chord-quiz') {
+                currentSecretChord = '';
+                document.getElementById('chordQuizFeedback').innerHTML = '';
+            }
+        }
+
+        /* --- TIMER POMODORO --- */
+        let timerSeconds = 15 * 60;
+        let isTimerRunning = false;
+        let timerMode = 'work';
+        let timerInterval = null;
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            document.getElementById('timerDisplay').innerText = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function toggleTimer() {
+            initAudio();
+            const btn = document.getElementById('btnStartTimer');
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                btn.innerHTML = `<i class="fa-solid fa-play text-xs"></i>`;
+                btn.className = "w-7 h-7 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center justify-center shadow transition-transform active:scale-95";
+            } else {
+                isTimerRunning = true;
+                btn.innerHTML = `<i class="fa-solid fa-pause text-xs"></i>`;
+                btn.className = "w-7 h-7 bg-amber-500 hover:bg-amber-600 text-white rounded-lg flex items-center justify-center shadow transition-transform active:scale-95";
+                
+                timerInterval = setInterval(() => {
+                    if (timerSeconds > 0) {
+                        timerSeconds--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        if (timerMode === 'work') {
+                            document.getElementById('restModal').classList.remove('hidden');
+                            playSuccessSound();
+                        } else {
+                            resetTimer();
+                        }
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerMode = 'work';
+            timerSeconds = 15 * 60;
+            document.getElementById('timerModeText').innerText = "Latihan";
+            document.getElementById('timerBadge').innerText = "15m";
+            document.getElementById('timerIcon').innerText = "⏳";
+            document.getElementById('btnStartTimer').innerHTML = `<i class="fa-solid fa-play text-xs"></i>`;
+            updateTimerDisplay();
+        }
+
+        function startBreakPeriod() {
+            document.getElementById('restModal').classList.add('hidden');
+            timerMode = 'break';
+            timerSeconds = 5 * 60;
+            document.getElementById('timerModeText').innerText = "Istirahat";
+            document.getElementById('timerBadge').innerText = "5m";
+            document.getElementById('timerIcon').innerText = "🍦";
+            updateTimerDisplay();
+            toggleTimer();
+        }
+
+        /* --- KEYBOARD LAPTOP EVENT --- */
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            const key = e.key.toLowerCase();
+            if (KEY_MAP[key]) {
+                handleKeyInteraction(KEY_MAP[key]);
+            }
+        });
+
+        // INIT LOAD
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPoints();
+            updateTimerDisplay();
+            generateNewNoteQuestion();
+        });
+    </script>
+</body>
+</html>
